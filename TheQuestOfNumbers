@@ -1,0 +1,324 @@
+import pygame
+import random
+import sys
+
+# Initialize Pygame
+pygame.init()
+
+# Screen dimensions
+WIDTH, HEIGHT = 800, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("The Quest of Numbers")
+
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+GREEN = (0, 255, 0)
+YELLOW = (255, 255, 0)
+
+# Fonts
+font = pygame.font.Font(None, 50)
+small_font = pygame.font.Font(None, 36)
+
+# Clock
+clock = pygame.time.Clock()
+
+# Story and Levels
+story_texts = [
+    "Welcome, adventurer! Your quest is to retrieve the Crown of Infinite Knowledge.",
+    "To succeed, you must pass 10 levels of trials set by the Guardians of Wisdom.",
+    "Each level challenges your mind and agility. Prove yourself worthy!",
+]
+guardians = [
+    "Guardian of Beginnings",
+    "Guardian of Logic",
+    "Guardian of Strategy",
+    "Guardian of Agility",
+    "Guardian of Numbers",
+    "Guardian of Puzzles",
+    "Guardian of Speed",
+    "Guardian of Patterns",
+    "Guardian of Focus",
+    "Guardian of Knowledge",
+]
+
+
+def draw_text(text, font, color, x, y):
+    """Simple text rendering helper."""
+    text_surface = font.render(text, True, color)
+    screen.blit(text_surface, (x, y))
+
+
+def draw_text_wrapped(text, font, color, x, y, max_width):
+    """Draw wrapped text to fit within a maximum width."""
+    words = text.split(' ')
+    lines = []
+    current_line = words[0]
+    for word in words[1:]:
+        if font.size(current_line + ' ' + word)[0] < max_width:
+            current_line += ' ' + word
+        else:
+            lines.append(current_line)
+            current_line = word
+    lines.append(current_line)
+
+    for i, line in enumerate(lines):
+        text_surface = font.render(line, True, color)
+        screen.blit(text_surface, (x, y + i * font.get_linesize()))
+
+
+def display_story(story):
+    """Display story text with a continue prompt."""
+    for line in story:
+        screen.fill(WHITE)
+        draw_text_wrapped(line, font, BLACK, 50, 100, WIDTH - 100)
+        draw_text("Press SPACE to continue...", small_font, RED, 50, HEIGHT - 100)
+        pygame.display.flip()
+
+        waiting = True
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                    waiting = False
+
+
+def play_math_level():
+    """Math quiz level."""
+    questions = [
+        ("Which of the following online behaviors is NOT considered a responsible example of digital citizenship?", 8),
+        ("Solve: 12 - 4", 8),
+        ("What is 3 x 7?", 21),
+        ("Solve: 81 ÷ 9", 9),
+        ("What is 2 + 2 x 2?", 6),
+    ]
+    question_tuple = random.choice(questions)
+    question, answer = question_tuple
+    user_input = ""
+
+    while True:
+        screen.fill(WHITE)
+        draw_text_wrapped(question, font, BLACK, 50, 100, WIDTH - 100)
+        draw_text(f"Answer: {user_input}", small_font, RED, 50, 300)
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    if user_input.isdigit() and int(user_input) == answer:
+                        return True
+                    else:
+                        return False
+                elif event.key == pygame.K_BACKSPACE:
+                    user_input = user_input[:-1]
+                else:
+                    user_input += event.unicode
+
+
+def play_candy_crush_game():
+    """Candy Crush-inspired mini-game."""
+    grid_size = 8
+    tile_size = WIDTH // grid_size
+    grid = [[random.randint(1, 5) for _ in range(grid_size)] for _ in range(grid_size)]
+    score = 0
+    score_goal = 50
+    selected = None
+
+    def draw_grid():
+        for y in range(len(grid)):
+            for x in range(len(grid[y])):
+                color = {1: RED, 2: GREEN, 3: BLUE, 4: YELLOW, 5: WHITE}[grid[y][x]]
+                pygame.draw.rect(screen, color, (x * tile_size, y * tile_size, tile_size, tile_size))
+                pygame.draw.rect(screen, BLACK, (x * tile_size, y * tile_size, tile_size, tile_size), 2)
+
+    def check_matches():
+        nonlocal grid, score
+        matched = set()
+        for y in range(grid_size):
+            for x in range(grid_size):
+                if x < grid_size - 2 and grid[y][x] == grid[y][x + 1] == grid[y][x + 2]:
+                    matched.update({(y, x), (y, x + 1), (y, x + 2)})
+                if y < grid_size - 2 and grid[y][x] == grid[y + 1][x] == grid[y + 2][x]:
+                    matched.update({(y, x), (y + 1, x), (y + 2, x)})
+        for y, x in matched:
+            grid[y][x] = random.randint(1, 5)
+        score += len(matched)
+        return len(matched) > 0
+
+    while True:
+        screen.fill(BLACK)
+        draw_grid()
+        draw_text(f"Score: {score}/{score_goal}", small_font, WHITE, 10, 10)
+
+        if score >= score_goal:
+            return True
+
+        pygame.display.flip()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = event.pos[0] // tile_size, event.pos[1] // tile_size
+                if not selected:
+                    selected = (y, x)
+                else:
+                    if abs(selected[0] - y) + abs(selected[1] - x) == 1:
+                        grid[selected[0]][selected[1]], grid[y][x] = grid[y][x], grid[selected[0]][selected[1]]
+                        if not check_matches():
+                            grid[selected[0]][selected[1]], grid[y][x] = grid[y][x], grid[selected[0]][selected[1]]
+                        selected = None
+                    else:
+                        selected = None
+
+        check_matches()
+        clock.tick(30)
+
+def play_breakout_game(lives):
+    ORANGE = (255, 165, 0)  # RGB values for orange
+
+    """Atari Breakout-inspired mini-game with life-granting blocks, slower paddle, and a life counter."""
+    paddle_width, paddle_height = 100, 20
+    ball_radius = 10
+    paddle_x = (WIDTH - paddle_width) // 2
+    paddle_y = HEIGHT - 40
+    ball_x, ball_y = WIDTH // 2, HEIGHT // 2
+    ball_dx, ball_dy = 0.5, -0.5  # Slower ball speed
+    blocks = [[1 for _ in range(8)] for _ in range(5)]
+    block_width = WIDTH // 8
+    block_height = 20
+    score = 0
+    paddle_speed = 1  # Slower paddle speed
+
+    # Randomly assign some blocks to grant extra lives
+    extra_life_blocks = {(0, 3), (2, 5)}  # Example block positions
+
+    # Countdown before the game starts
+    for countdown in range(10, 0, -1):
+        screen.fill(BLACK)
+        draw_text(f"Game starts in: {countdown}", font, WHITE, WIDTH // 2 - 150, HEIGHT // 2 - 30)
+        pygame.display.flip()
+        pygame.time.delay(1000)
+
+    while True:
+        screen.fill(BLACK)
+
+        # Draw paddle and ball
+        pygame.draw.rect(screen, WHITE, (paddle_x, paddle_y, paddle_width, paddle_height))
+        pygame.draw.circle(screen, RED, (ball_x, ball_y), ball_radius)
+
+        # Draw blocks
+        for i, row in enumerate(blocks):
+            for j, block in enumerate(row):
+                if block:
+                    color = GREEN if (i, j) not in extra_life_blocks else ORANGE
+                    pygame.draw.rect(
+                        screen, color,
+                        (j * block_width, i * block_height, block_width - 2, block_height - 2)
+                    )
+
+        # Display the life counter
+        draw_text(f"Lives: {lives}", font, WHITE, 10, 10)
+
+        pygame.display.flip()
+
+        # Update ball position
+        ball_x += ball_dx
+        ball_y += ball_dy
+
+        # Ball collision with walls
+        if ball_x <= 0 or ball_x >= WIDTH:
+            ball_dx *= -1
+        if ball_y <= 0:
+            ball_dy *= -1
+        if ball_y >= HEIGHT:  # Ball falls below paddle
+            return lives - 1
+
+        # Ball collision with paddle
+        if paddle_y <= ball_y + ball_radius <= paddle_y + paddle_height and paddle_x <= ball_x <= paddle_x + paddle_width:
+            ball_dy *= -1
+
+        # Ball collision with blocks
+        for i, row in enumerate(blocks):
+            for j, block in enumerate(row):
+                if block and j * block_width <= ball_x <= (j + 1) * block_width and \
+                        i * block_height <= ball_y <= (i + 1) * block_height:
+                    blocks[i][j] = 0
+                    ball_dy *= -1
+                    score += 1
+
+                    # Check if block grants extra life
+                    if (i, j) in extra_life_blocks:
+                        lives += 1
+
+        # Paddle movement
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            paddle_x -= paddle_speed  # Slower paddle speed
+        if keys[pygame.K_RIGHT]:
+            paddle_x += paddle_speed  # Slower paddle speed
+
+        # Keep paddle within screen bounds
+        if paddle_x < 0:
+            paddle_x = 0
+        if paddle_x > WIDTH - paddle_width:
+            paddle_x = WIDTH - paddle_width
+
+        # Check for win condition
+        if score == len(blocks) * len(blocks[0]):
+            return lives  # Return remaining lives if all blocks are cleared
+
+        # Event handling
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+
+
+
+def main():
+    """Main game loop."""
+    level = 1
+    lives = 3
+
+    display_story(story_texts)
+
+    while lives > 0:
+        guardian = guardians[(level - 1) % len(guardians)]
+        display_story([f"You face the {guardian}!"])
+
+        if level % 3 == 1:  # Math level
+            won = play_math_level()
+        elif level % 3 == 2:  # Candy Crush level
+            won = play_candy_crush_game()
+        else:  # Breakout level
+            lives = play_breakout_game(lives)  # Pass current lives and get updated lives
+            won = lives > 0  # Win if lives remain
+
+        if won:
+            level += 1
+        else:
+            lives -= 1
+
+        if level > 10:
+            display_story(["You have defeated all the Guardians!", "The Crown of Infinite Knowledge is yours!"])
+            pygame.quit()
+            sys.exit()
+
+        if lives == 0:
+            display_story(["You have failed your quest.", "Better luck next time!"])
+            pygame.quit()
+            sys.exit()
+
+
+
+if __name__ == "__main__":
+    main()
